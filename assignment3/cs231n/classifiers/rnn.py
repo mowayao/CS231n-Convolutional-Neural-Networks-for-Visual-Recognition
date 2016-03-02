@@ -137,6 +137,7 @@ class CaptioningRNN(object):
     ############################################################################
 
     #affine forward
+
     affine_out,affine_cache = affine_forward(features,W_proj,b_proj)
 
     word_embedding_out,word_embedding_cache = word_embedding_forward(captions_in,W_embed)
@@ -144,12 +145,10 @@ class CaptioningRNN(object):
     if self.cell_type == 'rnn':
         cell_out,cell_cache = rnn_forward(word_embedding_out,affine_out,Wx,Wh,b)
     else:
-        pass
-        #h0 = np.
-        #cell_out,cell_cache = lstm_forward(word_embedding_out,affine_out,)
+        cell_out,cell_cache = lstm_forward(word_embedding_out,affine_out,Wx,Wh,b)
 
     temporal_affine_out,temporal_affine_cache = temporal_affine_forward(cell_out,W_vocab,b_vocab)
-    #temporal_affine_out *= mask
+
     loss,dx = temporal_softmax_loss(temporal_affine_out,captions_out,mask)
 
     dx,dw,db = temporal_affine_backward(dx,temporal_affine_cache)
@@ -236,9 +235,10 @@ class CaptioningRNN(object):
     ###########################################################################
 
     affine_out,affine_cache = affine_forward(features,W_proj,b_proj)
-
+    #x, prev_h, prev_c, Wx, Wh, b
     if self.cell_type == 'rnn':
         for n in xrange(N):
+
             word_prev = np.zeros((1,1))
             word_prev[0,0] = self._start
             h = affine_out[n]
@@ -252,7 +252,20 @@ class CaptioningRNN(object):
                 temporal_affine_out = np.squeeze(temporal_affine_out)
                 word_prev[0,0] = np.argmax(temporal_affine_out)
     if self.cell_type == 'lstm':
-        pass
+        for n in xrange(N):
+            word_prev = np.zeros((1,1))
+            word_prev[0,0] = self._start
+            h = affine_out[n]
+            c = np.zeros_like(h)
+            for length in xrange(max_length):
+                captions[n,length] = word_prev[0,0]
+                word_embedding_out,word_embedding_cache = word_embedding_forward(word_prev,W_embed)
+
+                h,c,lstm_cache = lstm_step_forward(word_embedding_out,h,c,Wx,Wh,b)
+
+                temporal_affine_out,temporal_affine_cache = temporal_affine_forward(h,W_vocab,b_vocab)
+                temporal_affine_out = np.squeeze(temporal_affine_out)
+                word_prev[0,0] = np.argmax(temporal_affine_out)
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
