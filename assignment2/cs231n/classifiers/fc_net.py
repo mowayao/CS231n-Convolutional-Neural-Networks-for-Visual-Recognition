@@ -103,8 +103,6 @@ class TwoLayerNet(object):
     # automated tests, make sure that your L2 regularization includes a factor #
     # of 0.5 to simplify the expression for the gradient.                      #
     ############################################################################
-    N,D = X.shape
-
     loss,dx = softmax_loss(scores,y)
   
     loss += 0.5*self.reg*np.sum(W1*W1)+0.5*self.reg*np.sum(W2*W2)
